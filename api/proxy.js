@@ -26,25 +26,34 @@ if (method === "POST") {
     body = {};
   }
 
-  // Extract opportunity object
-  const opp = body?.opportunity;
-  if (!opp || typeof opp !== "object") {
-    console.error("No opportunity object found in payload:", body);
-    fetchOpts.body = JSON.stringify({ opportunity: {} });
-  } else {
-    // Build cleaned object
-    const cleanedOpp: Record<string, any> = {};
-    for (const [key, value] of Object.entries(opp)) {
-      if (value !== null && value !== undefined) {
-        if (["id", "company", "company_slug", "role", "status", "date_added"].includes(key)) {
-          cleanedOpp[key] = String(value);
-        } else {
-          cleanedOpp[key] = value;
-        }
+  // Ensure body is an object
+  if (!body || typeof body !== "object") {
+    console.error("Payload is not an object:", body);
+    body = {};
+  }
+
+  // Build flat payload for Apps Script
+  const flatBody: Record<string, any> = {};
+
+  for (const [key, value] of Object.entries(body)) {
+    if (value !== null && value !== undefined) {
+      // Required fields as strings
+      if (
+        ["id", "company", "company_slug", "role", "status", "date_added"].includes(key)
+      ) {
+        flatBody[key] = String(value);
+      } else if (typeof value === "object") {
+        // Nested objects must be stringified (score_snapshot, unknowns, etc.)
+        flatBody[key] = JSON.stringify(value);
+      } else {
+        // Optional fields as-is
+        flatBody[key] = value;
       }
     }
-    fetchOpts.body = JSON.stringify({ opportunity: cleanedOpp });
   }
+
+  // Send flat payload directly to Apps Script
+  fetchOpts.body = JSON.stringify(flatBody);
 }
 
 // Send upstream
