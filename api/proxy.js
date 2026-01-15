@@ -23,21 +23,25 @@ if (method === "POST") {
   // Extract the opportunity object
   const opp = body?.opportunity ?? body;
 
-  // Flatten all fields: convert booleans, numbers, nested objects to strings
-  const flatOpp: Record<string, string> = {};
+  // Build a new object to send upstream
+  const cleanedOpp: Record<string, any> = {};
+
   for (const [key, value] of Object.entries(opp)) {
     if (value !== null && value !== undefined) {
-      if (typeof value === "object") {
-        // Stringify nested objects/arrays like score_snapshot
-        flatOpp[key] = JSON.stringify(value);
+      // Enforce strings only for required fields
+      if (
+        ["id", "company", "company_slug", "role", "status", "date_added"].includes(key)
+      ) {
+        cleanedOpp[key] = String(value);
       } else {
-        flatOpp[key] = String(value);
+        // Keep optional fields as-is
+        cleanedOpp[key] = value;
       }
     }
   }
 
-  // Assign the flattened object back to fetch body
-  fetchOpts.body = JSON.stringify({ opportunity: flatOpp });
+  // Send the cleaned opportunity to upstream
+  fetchOpts.body = JSON.stringify({ opportunity: cleanedOpp });
 }
 
 // Send upstream
