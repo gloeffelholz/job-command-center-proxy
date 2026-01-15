@@ -4,10 +4,11 @@ export default async function handler(req, res) {
     (req.headers.authorization || "").replace(/^Bearer\s+/i, "") ||
     "";
 
-  const allowed =
-    token === process.env.PROXY_TOKEN ||
-    token === "default" ||
-    token === "safe-default";
+const allowed =
+  token === process.env.PROXY_TOKEN ||
+  token === "default" ||
+  token === "safe-default" ||
+  token === process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
 
   if (!allowed) {
     res.status(401).json({ ok: false, error: "Unauthorized" });
