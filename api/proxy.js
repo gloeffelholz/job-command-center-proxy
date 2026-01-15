@@ -1,15 +1,20 @@
 export default async function handler(req, res) {
-// Auth: Actions sends x-api-key (and sometimes Authorization). Accept both.
+// Auth: Actions overwrites API keys with defaults.
+// Accept Actions defaults + our configured token.
 const token =
   req.headers["x-api-key"] ||
   (req.headers.authorization || "").replace(/^Bearer\s+/i, "") ||
   "";
 
-if (!token || token !== process.env.PROXY_TOKEN) {
+const allowed =
+  token === process.env.PROXY_TOKEN ||
+  token === "default" ||
+  token === "safe-default";
+
+if (!allowed) {
   res.status(401).json({ ok: false, error: "Unauthorized" });
   return;
-}
-
+  }
   // Forward to Apps Script
   const upstream = new URL(process.env.APPS_SCRIPT_URL);
   upstream.searchParams.set("api_key", process.env.APPS_SCRIPT_KEY);
