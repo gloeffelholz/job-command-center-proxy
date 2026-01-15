@@ -1,11 +1,14 @@
 export default async function handler(req, res) {
-  // Bearer token auth (supported by GPT Builder UI)
-  const auth = req.headers.authorization || "";
-  const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
-  if (!token || token !== process.env.PROXY_TOKEN) {
-    res.status(401).json({ ok: false, error: "Unauthorized" });
-    return;
-  }
+// Auth: Actions sends x-api-key (and sometimes Authorization). Accept both.
+const token =
+  req.headers["x-api-key"] ||
+  (req.headers.authorization || "").replace(/^Bearer\s+/i, "") ||
+  "";
+
+if (!token || token !== process.env.PROXY_TOKEN) {
+  res.status(401).json({ ok: false, error: "Unauthorized" });
+  return;
+}
 
   // Forward to Apps Script
   const upstream = new URL(process.env.APPS_SCRIPT_URL);
