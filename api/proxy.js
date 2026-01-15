@@ -1,16 +1,9 @@
 export default async function handler(req, res) {
-const token =
-  req.headers["x-api-key"] ||
-  req.query["x-vercel-protection-bypass"] ||
-  (req.headers.authorization || "").replace(/^Bearer\s+/i, "") ||
-  "";
+const apiKey = req.headers["x-api-key"];
 
-const allowed = true; // temporary override to test GPT connectivity
-  
-  console.log("[DEBUG] token received:", token, "bypass secret:", process.env.VERCEL_AUTOMATION_BYPASS_SECRET?.slice(0,8));
-  if (!allowed) {
-    res.status(401).json({ ok: false, error: "Unauthorized" });
-    return;
+if (apiKey !== process.env.PROXY_API_KEY) {
+  res.status(401).json({ ok: false, error: "Unauthorized" });
+  return;
   }
 
   // Forward to Apps Script
