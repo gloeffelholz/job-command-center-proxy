@@ -1,57 +1,46 @@
 export default async function handler(req, res) {
-  const apiKey = req.headers["x-api-key"];
-  if (apiKey !== process.env.PROXY_TOKEN) {
-    res.status(401).json({ ok: false, error: "Unauthorized" });
-    return;
-  }
-
-  // Forward to Apps Script
-  const upstream = new URL(process.env.APPS_SCRIPT_URL!);
-  upstream.searchParams.set("api_key", process.env.APPS_SCRIPT_KEY);
-
-  const method = (req.method || "GET").toUpperCase();
-
-  const fetchOpts: any = {
-    method,
-    headers: { "Content-Type": "application/json" },
-  };
-
-  if (method === "POST") {
-    // Parse request body safely
-    let body: any = {};
-    try {
-      body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
-    } catch (err) {
-      console.error("Failed to parse body:", err);
-      body = {};
+  try {
+    if (req.method !== "POST") {
+      return res.status(405).json({ ok: false });
     }
 
-    // Build flat payload for Apps Script
-    const flatBody: Record<string, any> = {};
-    for (const [key, value] of Object.entries(body)) {
-      if (value !== null && value !== undefined) {
-        // Required fields as strings
-        if (["id", "company", "company_slug", "role", "status", "date_added"].includes(key)) {
-          flatBody[key] = String(value);
-        } else if (typeof value === "object") {
-          // Nested objects must be stringified
-          flatBody[key] = JSON.stringify(value);
-        } else {
-          // Optional fields as-is
-          flatBody[key] = value;
-        }
+    const apiKey = req.headers["x-api-key"];
+    if (apiKey !== process.env.PROXY_TOKEN) {
+      return res.status(401).json({ ok: false });
+    }
+
+    const scriptUrl = process.env.APPS_SCRIPT_URL;
+    const scriptKey = process.env.APPS_SCRIPT_KEY;
+    if (!scriptUrl || !scriptKey) {
+      return res.status(500).json({ ok: false });
+    }
+
+    let payload = req.body;
+    if (typeof payload === "string") {
+      payload = JSON.parse(payload);
+    }
+
+    const upstream = await fetch(
+      `${scriptUrl}?api_key=${encodeURIComponent(scriptKey)}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       }
-    }
+    );
 
-    fetchOpts.body = JSON.stringify(flatBody);
+    const text = await upstream.text();
+
+    return res.status(upstream.ok ? 200 : 502).json({
+      ok: upstream.ok,
+      upstreamStatus: upstream.status,
+      upstreamBody: text,
+    });
+  } catch (e) {
+    return res.status(500).json({
+      ok: false,
+      error: "Proxy crashed",
+      message: e?.message ?? String(e),
+    });
   }
-
-  // Send upstream
-  const r = await fetch(upstream.toString(), fetchOpts);
-  const text = await r.text();
-
-  res.status(r.status);
-  res.setHeader("Content-Type", "application/json");
-  res.setHeader("Cache-Control", "no-store");
-  res.send(text);
 }
