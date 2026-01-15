@@ -1,10 +1,9 @@
 export default async function handler(req, res) {
 const apiKey = req.headers["x-api-key"];
-
-if (apiKey !== process.env.PROXY_API_KEY) {
+if (apiKey !== process.env.PROXY_TOKEN) {
   res.status(401).json({ ok: false, error: "Unauthorized" });
   return;
-  }
+}
 
   // Forward to Apps Script
   const upstream = new URL(process.env.APPS_SCRIPT_URL);
