@@ -1,8 +1,9 @@
 export default async function handler(req, res) {
-  const token =
-    req.headers["x-api-key"] ||
-    (req.headers.authorization || "").replace(/^Bearer\s+/i, "") ||
-    "";
+const token =
+  req.headers["x-api-key"] ||
+  req.query["x-vercel-protection-bypass"] ||
+  (req.headers.authorization || "").replace(/^Bearer\s+/i, "") ||
+  "";
 
 const allowed =
   token === process.env.PROXY_TOKEN ||
