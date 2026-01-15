@@ -17,31 +17,34 @@ if (apiKey !== process.env.PROXY_TOKEN) {
   };
 
 if (method === "POST") {
-  // Parse the incoming request body
-  const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
-
-  // Extract the opportunity object
-  const opp = body?.opportunity ?? body;
-
-  // Build a new object to send upstream
-  const cleanedOpp: Record<string, any> = {};
-
-  for (const [key, value] of Object.entries(opp)) {
-    if (value !== null && value !== undefined) {
-      // Enforce strings only for required fields
-      if (
-        ["id", "company", "company_slug", "role", "status", "date_added"].includes(key)
-      ) {
-        cleanedOpp[key] = String(value);
-      } else {
-        // Keep optional fields as-is
-        cleanedOpp[key] = value;
-      }
-    }
+  // Parse request body safely
+  let body: any = {};
+  try {
+    body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
+  } catch (err) {
+    console.error("Failed to parse body:", err);
+    body = {};
   }
 
-  // Send the cleaned opportunity to upstream
-  fetchOpts.body = JSON.stringify({ opportunity: cleanedOpp });
+  // Extract opportunity object
+  const opp = body?.opportunity;
+  if (!opp || typeof opp !== "object") {
+    console.error("No opportunity object found in payload:", body);
+    fetchOpts.body = JSON.stringify({ opportunity: {} });
+  } else {
+    // Build cleaned object
+    const cleanedOpp: Record<string, any> = {};
+    for (const [key, value] of Object.entries(opp)) {
+      if (value !== null && value !== undefined) {
+        if (["id", "company", "company_slug", "role", "status", "date_added"].includes(key)) {
+          cleanedOpp[key] = String(value);
+        } else {
+          cleanedOpp[key] = value;
+        }
+      }
+    }
+    fetchOpts.body = JSON.stringify({ opportunity: cleanedOpp });
+  }
 }
 
 // Send upstream
