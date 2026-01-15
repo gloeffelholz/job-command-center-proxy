@@ -19,6 +19,12 @@ export default async function handler(req, res) {
     if (typeof payload === "string") {
       payload = JSON.parse(payload);
     }
+    // Unwrap GPT Action wrappers
+if (payload && typeof payload === "object") {
+  if (!payload.id && payload.opportunity) payload = payload.opportunity;
+  if (!payload.id && payload.record) payload = payload.record;
+}
+if (payload?.id != null) payload.id = String(payload.id);
 
     const upstream = await fetch(
       `${scriptUrl}?api_key=${encodeURIComponent(scriptKey)}`,
