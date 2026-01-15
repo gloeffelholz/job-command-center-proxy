@@ -17,8 +17,13 @@ if (apiKey !== process.env.PROXY_TOKEN) {
   };
 
   if (method === "POST") {
-    fetchOpts.body = JSON.stringify(req.body ?? {});
-  }
+  const body =
+    typeof req.body === "string" ? JSON.parse(req.body) : req.body;
+
+  const opp = body?.opportunity ?? body;
+
+  fetchOpts.body = JSON.stringify({ opportunity: opp });
+}
 
   // 👇👇👇 ADD THESE THREE LINES 👇👇👇
   console.log("[DEBUG] Fetching upstream:", upstream.toString());
