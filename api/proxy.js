@@ -9,7 +9,8 @@ const allowed =
   token === "default" ||
   token === "safe-default" ||
   token === process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
-
+  
+  console.log("[DEBUG] token received:", token, "bypass secret:", process.env.VERCEL_AUTOMATION_BYPASS_SECRET?.slice(0,8));
   if (!allowed) {
     res.status(401).json({ ok: false, error: "Unauthorized" });
     return;
