@@ -19,9 +19,7 @@ export default async function handler(req, res) {
       }
     const upstream = await fetch(url.toString(), { method: "GET" });
 const data = await upstream.json();
-
 return res.status(upstream.ok ? 200 : 502).json(data);
-      
     }
 
     // ✅ POST = upsert
