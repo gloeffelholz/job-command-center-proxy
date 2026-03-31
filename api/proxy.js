@@ -17,15 +17,11 @@ export default async function handler(req, res) {
       for (const [k, v] of Object.entries(req.query || {})) {
         if (v !== undefined) url.searchParams.set(k, String(v));
       }
+    const upstream = await fetch(url.toString(), { method: "GET" });
+const data = await upstream.json();
 
-      const upstream = await fetch(url.toString(), { method: "GET" });
-      const text = await upstream.text();
-
-      return res.status(upstream.ok ? 200 : 502).json({
-        ok: upstream.ok,
-        upstreamStatus: upstream.status,
-        upstreamBody: text,
-      });
+return res.status(upstream.ok ? 200 : 502).json(data);
+      
     }
 
     // ✅ POST = upsert
